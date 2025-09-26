@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Chatbot with Gemini 2.0 Flash</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+        
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #6a11cb 0%, #2575fc 100%);
+            padding: 20px;
+        }
+        
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            background-color: rgb(240, 242, 245);
+            width: 100%;
+            max-width: 450px;
+            height: 600px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+            transition: transform 0.3s ease;
+        }
+        
+        .chat-container:hover {
+            transform: translateY(-5px);
+        }
+        
+        .chat-header {
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            padding: 15px;
+            color: white;
+            text-align: center;
+            position: relative;
+        }
+        
+        .chat-header h1 {
+            font-size: 1.5rem;
+            margin: 0;
+        }
+        
+        .api-status {
+            font-size: 0.8rem;
+            margin-top: 5px;
+            opacity: 0.9;
+        }
+        
+        .status-indicator {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            background-color: #90EE90;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        
+        .chat-messages {
+            flex: 1;
+            padding: 15px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .message {
+            max-width: 80%;
+            padding: 12px 15px;
+            border-radius: 18px;
+            word-wrap: break-word;
+            position: relative;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .bot-message {
+            align-self: flex-start;
+            background-color: #e5e5ea;
+            border-bottom-left-radius: 5px;
+            color: #333;
+        }
+        
+        .user-message {
+            align-self: flex-end;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+        
+        .typing-indicator {
+            align-self: flex-start;
+            background-color: #e5e5ea;
+            padding: 10px 15px;
+            border-radius: 18px;
+            display: none;
+        }
+        
+        .typing-dots {
+            display: flex;
+            gap: 3px;
+        }
+        
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background-color: #999;
+            border-radius: 50%;
+            animation: typing 1.4s infinite ease-in-out;
+        }
+        
+        .typing-dot:nth-child(1) { animation-delay: -0.32s; }
+        .typing-dot:nth-child(2) { animation-delay: -0.16s; }
+        
+        @keyframes typing {
+            0%, 80%, 100% { transform: scale(0.8); opacity: 0.5; }
+            40% { transform: scale(1); opacity: 1; }
+        }
+        
+        .chat-input-container {
+            display: flex;
+            padding: 15px;
+            background-color: white;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        #user-input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 25px;
+            outline: none;
+            font-size: 16px;
+            transition: border-color 0.3s;
+        }
+        
+        #user-input:focus {
+            border-color: #4CAF50;
+        }
+        
+        #send-button {
+            margin-left: 10px;
+            padding: 12px 20px;
+            background: linear-gradient(to right, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        #send-button:hover {
+            background: linear-gradient(to right, #45a049, #4CAF50);
+            transform: scale(1.05);
+        }
+        
+        #send-button:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .command-hint {
+            text-align: center;
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+        }
+        
+        .error-message {
+            color: #d32f2f;
+            background-color: #ffcdd2;
+            border: 1px solid #f44336;
+        }
+        
+        .api-key-setup {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px;
+            font-size: 0.9rem;
+        }
+        
+        /* Scrollbar styling */
+        .chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 10px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 10px;
+        }
+        
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+        
+        @media (max-width: 480px) {
+            .chat-container {
+                height: 100vh;
+                border-radius: 0;
+            }
+            
+            .message {
+                max-width: 85%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>AI Chatbot</h1>
+            <div class="api-status">API: <span id="api-status">Ready</span></div>
+            <div class="status-indicator"></div>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message bot-message">
+                <p>Hello! I'm your AI assistant How can I help you today?</p>
+            </div>
+        </div>
+        <div class="chat-input-container">
+            <input type="text" id="user-input" placeholder="Type your message here..." autofocus>
+            <button id="send-button">Send</button>
+        </div>
+        
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatMessages = document.getElementById('chat-messages');
+            const userInput = document.getElementById('user-input');
+            const sendButton = document.getElementById('send-button');
+            const apiStatus = document.getElementById('api-status');
+            const typingIndicator = document.createElement('div');
+            
+            // Create typing indicator
+            typingIndicator.className = 'typing-indicator';
+            typingIndicator.innerHTML = `
+                <div class="typing-dots">
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                    <div class="typing-dot"></div>
+                </div>
+            `;
+            
+            // Enhanced bot responses with more commands
+            const botResponses = {
+                hello: ["Hello! How can I assist you today?", "Hi there! Nice to meet you!", "Hey! What can I do for you?"],
+                hi: ["Hi! How are you doing?", "Hello! What's on your mind?", "Hey there! How can I help?"],
+                "how are you": ["I'm functioning perfectly, thanks for asking! How about you?", "I'm doing great! Ready to help you with anything.", "All systems operational! How are you feeling today?"],
+                "what can you do": ["I can answer questions, tell jokes, give you the time, and much more! Try asking me anything.", "I'm here to help with information, entertainment, or just chat. What would you like to know?"],
+                bye: ["Goodbye! Have a wonderful day!", "See you later! Come back anytime.", "Farewell! Stay safe and take care!"],
+                help: [
+                    "I support these commands: <strong>help</strong>, <strong>time</strong>, <strong>date</strong>, <strong>joke</strong>, <strong>weather</strong>, <strong>clear</strong>. Or ask me anything else!",
+                    "Need assistance? Try: time, date, joke, weather, or just ask me a question!",
+                    "Here are my commands: <br>- <strong>help</strong>: Show this help message<br>- <strong>time</strong>: Current time<br>- <strong>date</strong>: Current date<br>- <strong>joke</strong>: Random joke<br>- <strong>weather</strong>: Weather info<br>- <strong>clear</strong>: Clear chat"
+                ],
+                
+                // Asking about bot's status
+    "how are you": [
+        "I'm functioning perfectly, thanks for asking! How about you?", 
+        "I'm doing great! Ready to help you with anything.", 
+        "All systems operational! How are you feeling today?"
+    ],
+  "good morning": [
+        "Good morning! 🌞 Have a great start to your day!",
+        "Morning! How can I help you today?"
+    ],
+    "good afternoon": [
+        "Good afternoon! ☀️ Hope your day is going well.",
+        "Afternoon! What would you like to know?"
+    ],
+    "good evening": [
+        "Good evening! 🌙 How was your day?",
+        "Evening! Ready to chat or need help with something?"
+    ],
+    "good night": [
+        "Good night! 🌟 Sweet dreams!",
+        "Rest well! See you tomorrow."
+    ],
+     "sing a song": [
+        "🎵 I can’t sing, but I can write lyrics! Want me to try?",
+        "I’m not a great singer, but here’s a line: Beep boop beep, I’m your AI pal 🎶"
+    ],
+    "dance": [
+        "🕺💃 I can’t dance physically, but imagine me doing robot dance!",
+        "Here’s my digital dance: 🤖✨🎶"
+    ],
+
+    // Bot Identity
+    "who are you": [
+        "I’m Webzy, your AI assistant 🤖.",
+        "I’m your personal chatbot created to help you!",
+        "I’m an AI assistant powered by Gemini."
+    ],
+    "what is your name": [
+        "My name is Webzy! Nice to meet you 👋",
+        "I’m Webzy, your AI chatbot.",
+        "You can call me Webzy!"
+    ],
+    "who created you": [
+        "I was created by Masif Ahamed during his AI project!",
+        "Masif developed me using HTML, CSS, JavaScript, and Gemini API.",
+        "I was built as part of a Student Management System project."
+    ],
+
+    // Feelings / State
+    "how are you": [
+        "I’m doing great, thank you! How about you?",
+        "I’m always ready to help! How are you today?",
+        "All systems running smoothly 🚀"
+    ],
+
+    // Thanks
+    "thank you": [
+        "You’re welcome! 😊",
+        "Glad I could help!",
+        "No problem at all!"
+    ],
+    "thanks": [
+        "Anytime! 🙌",
+        "You’re most welcome!",
+        "Happy to help!"
+    ],
+// Study / Education Help
+    "study tips": [
+        "Here are 3 quick study tips: 1) Take short breaks. 2) Revise daily. 3) Practice past questions.",
+        "Try using the Pomodoro technique ⏰: 25 min study + 5 min break.",
+        "Make short notes while studying, it helps in quick revision."
+    ],
+    "how to learn programming": [
+        "Start with basics like Python, JavaScript or C.",
+        "Practice coding daily on platforms like LeetCode, HackerRank, or Codeforces.",
+        "Build small projects — practice is the best teacher!"
+    ],
+    "exam preparation": [
+        "Make a timetable 📝 and stick to it.",
+        "Revise key topics daily and practice previous papers.",
+        "Stay calm and get proper sleep before exams 😴."
+    ],
+
+
+    // Capabilities of the bot
+    "what can you do": [
+        "I can answer questions, tell jokes, give you the time, and much more! Try asking me anything.",
+        "I'm here to help with information, entertainment, or just chat. What would you like to know?"
+    ],
+                time: getCurrentTime,
+                date: getCurrentDate,
+                joke: getRandomJoke,
+                clear: clearChat, 
+                weather: "I'd love to tell you the weather! Unfortunately, I don't have real-time weather data. You might want to check a weather website or app.",
+                clear: clearChat,
+                default: "I'm not sure I understand. Let me ask Gemini for help with that!"
+            };
+
+            // Jokes database
+            const jokes = [
+                "Why don't scientists trust atoms? Because they make up everything!",
+                "Why did the scarecrow win an award? He was outstanding in his field!",
+                "Why don't eggs tell jokes? They'd crack each other up!",
+                "What do you call a fake noodle? An impasta!",
+                "How does a penguin build its house? Igloos it together!",
+                "Why did the math book look so sad? Because it had too many problems!",
+                "What do you call a bear with no teeth? A gummy bear!",
+                "Why couldn't the bicycle stand up by itself? It was two tired!",
+                "What do you call a sleeping bull? A bulldozer!",
+                "Why don't skeletons fight each other? They don't have the guts!"
+            ];
+
+            // Function to add message to the chat
+            function addMessage(message, isUser = false, isError = false) {
+                const messageDiv = document.createElement('div');
+                if (isError) {
+                    messageDiv.className = `message bot-message error-message`;
+                } else {
+                    messageDiv.className = `message ${isUser ? 'user-message' : 'bot-message'}`;
+                }
+                
+                const messageText = document.createElement('p');
+                // Allow some basic HTML in bot messages for formatting
+                if (!isUser) {
+                    messageText.innerHTML = message;
+                } else {
+                    messageText.textContent = message;
+                }
+                
+                messageDiv.appendChild(messageText);
+                chatMessages.appendChild(messageDiv);
+                
+                // Scroll to the bottom
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Function to show typing indicator
+            function showTypingIndicator() {
+                chatMessages.appendChild(typingIndicator);
+                typingIndicator.style.display = 'block';
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+            }
+
+            // Function to hide typing indicator
+            function hideTypingIndicator() {
+                typingIndicator.style.display = 'none';
+            }
+
+            // Function to get current time
+            function getCurrentTime() {
+                const now = new Date();
+                return `The current time is ${now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}.`;
+            }
+
+            // Function to get current date
+            function getCurrentDate() {
+                const now = new Date();
+                return `Today is ${now.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}.`;
+            }
+
+            // Function to get a random joke
+            function getRandomJoke() {
+                const randomIndex = Math.floor(Math.random() * jokes.length);
+                return jokes[randomIndex];
+            }
+
+            // Function to clear the chat
+            function clearChat() {
+                chatMessages.innerHTML = '';
+                addMessage("Chat cleared! How can I help you now?", false);
+                return ""; // Return empty string so nothing is added after
+            }
+
+            // Function to get the bot response
+            function getBotResponse(userMessage) {
+                const lowerMessage = userMessage.toLowerCase().trim();
+                
+                // Check for exact matches first
+                if (botResponses.hasOwnProperty(lowerMessage)) {
+                    const response = botResponses[lowerMessage];
+                    
+                    // If it's a function, call it
+                    if (typeof response === 'function') {
+                        return response();
+                    }
+                    
+                    // If it's an array, pick a random response
+                    if (Array.isArray(response)) {
+                        return response[Math.floor(Math.random() * response.length)];
+                    }
+                    
+                    return response;
+                }
+                
+                // Check for partial matches
+                for (const [key, value] of Object.entries(botResponses)) {
+                    if (lowerMessage.includes(key) && key !== 'default') {
+                        const response = value;
+                        
+                        if (typeof response === 'function') {
+                            return response();
+                        }
+                        
+                        if (Array.isArray(response)) {
+                            return response[Math.floor(Math.random() * response.length)];
+                        }
+                        
+                        return response;
+                    }
+                }
+                
+                // If no match found, use Gemini API
+                return "default";
+            }
+
+            // Function to call Gemini 2.0 Flash API - Using the exact format you provided
+            async function callGeminiAPI(userMessage) {
+                // Replace with your actual Gemini API key from Google AI Studio
+                const API_KEY = 'AIzaSyBzGgERx4CnDLBRwWdQ8Whd6WKQ8exepx4';
+                
+                // Using the exact URL and format from your curl example
+                const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${API_KEY}`;
+                
+                apiStatus.textContent = "Processing...";
+                apiStatus.style.color = "#ff9800";
+                
+                try {
+                    const response = await fetch(API_URL, {
+                        method: 'POST',
+                        Headers: {
+                            'Content-Type': 'application/json'},
+                        body: JSON.stringify({
+                        contents: [{
+                                parts: [{
+                                    text: [{text:userMessage}]
+                                }]
+                            }]
+                        })
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`API Error: ${response.status} - ${errorData.error?.message || 'Unknown error'}`);
+                    }
+                    
+                    const data = await response.json();
+                    
+                    if (data.candidates && data.candidates[0] && data.candidates[0].content && data.candidates[0].content.parts[0].text) {
+                        apiStatus.textContent = "Ready";
+                        apiStatus.style.color = "#4CAF50";
+                        return data.candidates[0].content.parts[0].text;
+                    } else {
+                        throw new Error("Invalid response format from API");
+                    }
+                } catch (error) {
+                    console.error('Error calling Gemini API:', error);
+                    apiStatus.textContent = "Error";
+                    apiStatus.style.color = "#f44336";
+                    
+                    // Check if it's an API key error
+                    if (error.message.includes('API_KEY') || error.message.includes('403') || error.message.includes('401')) {
+                        return "API Key Error: Please check if your Gemini API key is correct and has proper permissions.";
+                    }
+                    
+                    // Check if it's a CORS error
+                    if (error.message.includes('Failed to fetch') || error.message.includes('CORS')) {
+                        return "Network Error: Please check your internet connection or try running this from a local server.";
+                    }
+                    
+                    // Generic fallback response
+                    return "I apologize, but I'm having trouble connecting to the AI service right now. Please try again later or ask me something else.";
+                }
+            }
+
+            // Function to handle sending messages
+            async function sendMessage() {
+                const message = userInput.value.trim();
+                
+                if (message) {
+                    // Add user message to chat
+                    addMessage(message, true);
+                    userInput.value = "";
+                    sendButton.disabled = true;
+                    
+                    // Show typing indicator
+                    showTypingIndicator();
+                    
+                    // Simulate delay for more natural interaction
+                    setTimeout(async () => {
+                        const botResponse = getBotResponse(message);
+                        
+                        // Hide typing indicator
+                        hideTypingIndicator();
+                        
+                        if (botResponse === "default") {
+                            // Use Gemini API for responses not in our dataset
+                            try {
+                                const geminiResponse = await callGeminiAPI(message);
+                                addMessage(geminiResponse);
+                            } catch (error) {
+                                addMessage("I'm having trouble processing your request. Please try again.", false, true);
+                            }
+                        } else if (botResponse !== "") {
+                            // Use our predefined response
+                            addMessage(botResponse);
+                        }
+                        
+                        sendButton.disabled = false;
+                        userInput.focus();
+                    }, 1000 + Math.random() * 1000);
+                }
+            }
+
+            // Event listeners
+            sendButton.addEventListener('click', sendMessage);
+
+            userInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Focus on input when page loads
+            userInput.focus();
+        });
+    </script>
+</body>
+</html>

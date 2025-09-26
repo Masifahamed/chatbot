@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        *{
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'poppins',sans-serif;
+        }
+       body{
+        display: flex;
+        justify-content: center;
+        text-align: center;
+        min-height: 100vh;
+        margin-top: 30px;
+        background-color: white;
+       }
+       .chat-container{
+        display: flex;
+        flex-direction: column;
+        text-align: left;
+        background-color: rgb(201, 204, 207);
+        width: 400px;
+    height: 600px;
+    border-radius: 10px;
+    transition: 0.3s ease;
+    box-shadow:6px 7px 9px;
+       }
+       .chat-container:hover{
+        transform: translateY(-10px);
+       }
+       .chat-header{
+        display: block;
+        background-color: green;
+        border-radius: 10px 10px 0px 0px;
+        padding: 10px;
+        color: white;
+        text-align: center;
+       }
+       .message{
+        background-color: rgb(128, 255, 0);
+        padding: 10px 15px;
+        margin: 10px;
+        border-radius: 0px 15px 15px 15px;
+        word-wrap: break-word;
+        max-width: 90%;
+        display: inline-block;
+        align-self: flex-start;
+        box-shadow: 5px 5px 9px black;
+       }
+       .chat-message{
+        display: flex;
+        flex-direction: column;
+        padding: 5px;
+        flex: 1;
+        overflow: auto;
+       }
+       .chat-input{
+        background-color: rgb(117, 112, 112);
+        padding: 10px;
+        border-radius: 0px 0px 10px 10px;
+       }
+       #user-input{
+        font-size: 20px;
+        border: none;
+        width: 80%;
+        padding: 5px;
+        outline: none;
+        border-radius: 5px;
+       }
+#send-button{
+    font-size: 20px;
+    padding: 5px 10px;
+    background-color: green;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+#send-button:hover{
+    background-color: rgb(205, 241, 156);
+    color: black;
+}
+.user-message{
+    background-color: green;
+    color: white;
+    margin-left: auto;
+    border-radius: 10px 10px 0px 10px;
+}
+    </style>
+</head>
+<body>
+<div class="chat-container">
+    <div class="chat-header">
+            <h1>AI Chatbot</h1>
+        </div>
+        <div class="chat-message" id="chat-message">
+            <div class="message bot-message">
+                <p>Hello! I'm your AI assistance , How can i help you today</p>
+            </div>
+        </div>
+         <div class="chat-input">
+                <input type="text" id="user-input" placeholder="Type your message here....." autofocus> <button type="submit" id="send-button">Send</button>
+            </div>
+    </div>
+    <script>
+//    document.addEventListener('DOMContentLoaded',()=>{
+//     var chatmessage=document.getElementById('chat-message');
+//     var userinput=document.getElementById('user-input')
+//     var sendbutton=document.getElementById('send-button')
+//     //Simple responsive for th chatbot
+//     const botresponses={
+//         hello:"Hello! how can i help you today?",
+//         hi:"Hi There! how are you?",
+//         "How are you ":"I'm doing well,thank you! How about you",
+//         "what can i do":"I can answer simple question and have basic conversations.",
+//         bye:"Goodbye! have a great day!",
+//         default:"I'am not sure I understand.could you try asking somethings somethings else" 
+//     }
+//     //Function to add message to the chat
+//     function addmessage(message,isUser=false){
+//      const messagediv=document.createElement("div");
+//      messagediv.classList.add('message')
+//      messagediv.classList.add(isUser ? "user-message" : "bot-message")
+
+//      const messagetext=document.createElement('p');
+//      messagetext.textContent=message;
+//      messagediv.appendChild(messagetext);
+
+//      chatmessage.appendChild(messagediv);
+//      chatmessage.scrollTop=chatmessage.scrollHeight;
+//     }
+//     //Function to get the bot response
+//     function getbotresponse(usermessage){
+//         const lowermessage=usermessage.toLowerCase();
+
+//         for(const [Key,value]of Object.entries(botresponses)){
+//             if(lowermessage.includes(key)){
+//                 return value
+//             }
+//         }
+//         return botresponses.default
+//     }
+    
+//     //Function to handle sending messages
+//     function sendmessage(){
+//         const message=userinput.value.trim()
+//         if(message){
+//             addmessage(message,true);
+//             userinput.value="";
+//             //Simulating bot thinking
+//             setTimeout(()=>{
+//                 const botresponse=getbotresponse(message);
+//              addmessage(botresponse);
+//             },500)
+//         }
+//     }
+//     sendbutton.addEventListener('click',sendmessage)
+
+//     userinput.addEventListener("keypress",(e)=>{
+//         if(e.key==="Enter"){
+//             sendmessage()
+//         }
+//     })
+//    })
+
+document.addEventListener('DOMContentLoaded', () => {
+    const chatmessage = document.getElementById('chat-message');
+    const userinput = document.getElementById('user-input');
+    const sendbutton = document.getElementById('send-button');
+
+    // Simple responses for the chatbot
+    const botresponses = {
+        hello: "Hello! How can I help you today?",
+        hi: "Hi there! How are you?",
+        "how are you": "I'm doing well, thank you! How about you?",
+        "what can i do": "I can answer simple questions and have basic conversations.",
+        bye: "Goodbye! Have a great day!",
+        fine:"that's Sound Good if anythings Else",
+        default: "I'm not sure I understand. Could you try asking something else?"
+    };
+
+    // Function to add message to the chat
+    function addmessage(message, isUser = false) {
+        const messagediv = document.createElement("div");
+        messagediv.classList.add('message', isUser ? "user-message" : "bot-message");
+
+        const messagetext = document.createElement('p');
+        messagetext.textContent = message;
+        messagediv.appendChild(messagetext);
+
+        chatmessage.appendChild(messagediv);
+        chatmessage.scrollTop = chatmessage.scrollHeight;
+    }
+
+    // Function to get the bot response
+    function getbotresponse(usermessage) {
+        const lowermessage = usermessage.toLowerCase().trim();
+        for (const [key, value] of Object.entries(botresponses)) {
+            if (lowermessage.includes(key)) {
+                return value;
+            }
+        }
+        return botresponses.default;
+    }
+
+    // Function to handle sending messages
+    function sendmessage() {
+        const message = userinput.value.trim();
+        if (message) {
+            addmessage(message, true);
+            userinput.value = "";
+            setTimeout(() => {
+                const botresponse = getbotresponse(message);
+                addmessage(botresponse);
+            }, 500);
+        }
+    }
+
+    sendbutton.addEventListener('click', sendmessage);
+
+    userinput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter") {
+            sendmessage();
+        }
+    });
+});
+
+
+    </script>
+</body>
+</html>
